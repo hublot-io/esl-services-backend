@@ -4,10 +4,8 @@ mod services;
 mod settings;
 mod utils;
 use std::{io, time::Duration};
-
-use config;
 use custom_error::{custom_error, Error};
-use log::{debug, error, info};
+use log::{debug, error};
 use services::{build_client, esl_service::EslServiceError, poll::PollingError, ClientError};
 use settings::Settings;
 use tokio::{task::JoinError, time::sleep};
@@ -58,7 +56,7 @@ async fn main() -> Result<(), MainError> {
                 error!("The poller have crashed from an unrecoverable error. Restarting it in a few seconds");
                 error!("Cause of the crash: {}", output.unwrap_err());
             }
-            Ok(output) => {
+            Ok(_output) => {
                 error!("The poller have stopped with a successfull response. It is not an intended behavior please check the logs above.");
                 break;
             }
@@ -72,5 +70,5 @@ async fn main() -> Result<(), MainError> {
         }
         sleep(Duration::from_millis(2000)).await;
     }
-    return Ok(());
+    Ok(())
 }

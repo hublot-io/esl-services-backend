@@ -73,14 +73,12 @@ pub fn from_esl(esl: Esl) -> PricerEsl {
         plu: None,
     };
 
-    let pricer_esl = PricerEsl {
+    PricerEsl {
         item_id: esl.esl_id,
         item_name: esl.name,
         presentation: "".to_string(),
         properties,
-    };
-
-    pricer_esl
+    }
 }
 
 pub async fn update_esl(

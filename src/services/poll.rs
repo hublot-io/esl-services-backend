@@ -1,5 +1,4 @@
-use std::{error, fmt, io, task::Poll, time::Duration};
-
+use std::{io, time::Duration};
 use super::{esl_service::EslServiceError, pricer_service::PricerError};
 use crate::services::{
     esl_service::get_print_requests,

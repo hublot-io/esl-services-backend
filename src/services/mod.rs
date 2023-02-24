@@ -21,7 +21,7 @@ custom_error! {
 fn read_certificate(certificate_path: &str) -> Result<Vec<u8>, ClientError> {
     let mut buf = Vec::new();
     File::open(certificate_path)?.read_to_end(&mut buf)?;
-    return Ok(buf);
+    Ok(buf)
 }
 
 /// Builds a configured reqwest http client.
