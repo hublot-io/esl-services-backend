@@ -12,7 +12,6 @@ pub struct Settings {
     pub polling_rate: Option<i32>,
     pub pricer_user: Option<String>,
     pub pricer_password: Option<String>,
-
 }
 
 impl Settings {

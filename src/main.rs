@@ -57,7 +57,7 @@ async fn main() -> Result<(), MainError> {
             Ok(output) if output.is_err() => {
                 error!("The poller have crashed from an unrecoverable error. Restarting it in a few seconds");
                 error!("Cause of the crash: {}", output.unwrap_err());
-            },
+            }
             Ok(output) => {
                 error!("The poller have stopped with a successfull response. It is not an intended behavior please check the logs above.");
                 break;

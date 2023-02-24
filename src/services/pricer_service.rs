@@ -90,9 +90,17 @@ pub async fn update_esl(
     pricer_password: Option<String>,
 ) -> Result<PricerEsl, PricerError> {
     let client = reqwest::Client::new();
-
     let url = format!("{} /api/public/core/v1/items", esl_server_url);
-    let response = client.patch(url).json(&esl).send().await?;
+
+    let user = pricer_user.expect("Pricer user is empty in the config file, please add 'pricer_user=<user name>' in hublot-config.toml");
+    let pwd = pricer_password.expect("Pricer password is empty in the config file, please add 'pricer_password=<password>' in hublot-config.toml");
+
+    let response = client
+        .patch(url)
+        .basic_auth(user, Some(pwd))
+        .json(&esl)
+        .send()
+        .await?;
 
     match response.status() {
         StatusCode::OK => {

@@ -1,7 +1,10 @@
 use std::{error, fmt, io, task::Poll, time::Duration};
 
 use super::{esl_service::EslServiceError, pricer_service::PricerError};
-use crate::services::{esl_service::get_print_requests, pricer_service::{self, PricerEsl}};
+use crate::services::{
+    esl_service::get_print_requests,
+    pricer_service::{self, PricerEsl},
+};
 use log::debug;
 use reqwest::Client;
 use tokio::time::sleep;
@@ -36,12 +39,19 @@ pub async fn poll(
     loop {
         let print_requests = get_print_requests(hublot_server_url, &client, client_serial).await?;
 
-        let pricer_requests: Vec<PricerEsl> = print_requests.iter()
+        let pricer_requests: Vec<PricerEsl> = print_requests
+            .iter()
             .map(|esl| pricer_service::from_esl(esl.esl.esl.clone()))
-            .collect(); 
+            .collect();
 
         for pricer_esl in pricer_requests {
-            pricer_service::update_esl(pricer_esl, esl_server_url, pricer_user, pricer_password).await?;
+            pricer_service::update_esl(
+                pricer_esl,
+                esl_server_url,
+                pricer_user.clone(),
+                pricer_password.clone(),
+            )
+            .await?;
         }
         // wait for a few seconds before starting a new poll
         sleep(Duration::from_millis(interval as u64)).await;
