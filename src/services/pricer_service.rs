@@ -1,6 +1,6 @@
 use std::io;
 
-use super::{esl_service::Esl, generic_label::GenericEsl};
+use super::{generic_label::GenericEsl};
 use log::debug;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -74,12 +74,12 @@ impl From<GenericEsl> for PricerEsl {
             fish_size: Some(value.taille),
             plu: Some(value.plu),
         };
-        return Self {
+        Self {
             item_id: value.id,
             item_name: value.prix,
             presentation: "POISSON".to_string(),
-            properties: properties,
-        };
+            properties,
+        }
     }
 }
 
