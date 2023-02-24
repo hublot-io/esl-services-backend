@@ -1,4 +1,3 @@
-use std::{io, time::Duration};
 use super::{esl_service::EslServiceError, pricer_service::PricerError};
 use crate::services::{
     esl_service::get_print_requests,
@@ -6,6 +5,7 @@ use crate::services::{
 };
 use log::debug;
 use reqwest::Client;
+use std::{io, time::Duration};
 use tokio::time::sleep;
 
 custom_error! {
@@ -40,7 +40,7 @@ pub async fn poll(
 
         let pricer_requests: Vec<PricerEsl> = print_requests
             .iter()
-            .map(|esl| pricer_service::from_esl(esl.esl.esl.clone()))
+            .map(|esl| esl.clone().into())
             .collect();
 
         for pricer_esl in pricer_requests {

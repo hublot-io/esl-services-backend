@@ -1,6 +1,6 @@
 use std::io;
 
-use super::esl_service::Esl;
+use super::{esl_service::Esl, generic_label::GenericEsl};
 use log::debug;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -56,28 +56,30 @@ pub struct PricerEsl {
     properties: PricerFishProperties,
 }
 
-pub fn from_esl(esl: Esl) -> PricerEsl {
-    let properties = PricerFishProperties {
-        fish_name: Some(esl.name.clone()),
-        fish_calibre: None,
-        fish_engin: Some(esl.engin),
-        fish_engin_2: None,
-        fish_engin_3: None,
-        fish_info: None,
-        fish_name_2: None,
-        fish_name_scien: Some(esl.item_scient_name),
-        fish_origin: None,
-        fish_origin_2: None,
-        fish_production: None,
-        fish_size: None,
-        plu: None,
-    };
-
-    PricerEsl {
-        item_id: esl.esl_id,
-        item_name: esl.name,
-        presentation: "".to_string(),
-        properties,
+impl From<GenericEsl> for PricerEsl {
+    fn from(value: GenericEsl) -> Self {
+        let properties = PricerFishProperties {
+            fish_name: Some(value.nom),
+            fish_calibre: None,
+            fish_engin: Some(value.engin),
+            fish_engin_2: None,
+            fish_engin_3: None,
+            // guessing this is congel infos
+            fish_info: value.congel_infos,
+            fish_name_2: None,
+            fish_name_scien: Some(value.nom_scientifique),
+            fish_origin: value.origine,
+            fish_origin_2: None,
+            fish_production: None,
+            fish_size: Some(value.taille),
+            plu: Some(value.plu),
+        };
+        return Self {
+            item_id: value.id,
+            item_name: value.prix,
+            presentation: "POISSON".to_string(),
+            properties: properties,
+        };
     }
 }
 

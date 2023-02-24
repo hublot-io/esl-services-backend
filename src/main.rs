@@ -3,11 +3,11 @@ extern crate custom_error;
 mod services;
 mod settings;
 mod utils;
-use std::{io, time::Duration};
 use custom_error::{custom_error, Error};
 use log::{debug, error};
 use services::{build_client, esl_service::EslServiceError, poll::PollingError, ClientError};
 use settings::Settings;
+use std::{io, time::Duration};
 use tokio::{task::JoinError, time::sleep};
 
 custom_error! {

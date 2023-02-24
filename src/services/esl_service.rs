@@ -5,6 +5,8 @@ use log::debug;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
+use super::generic_label::GenericEsl;
+
 /// The representation of the state of an Electronic Shelf Label
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Esl {
@@ -79,11 +81,11 @@ pub async fn get_print_requests(
     hublot_server_url: &str,
     client: &Client,
     client_serial: &str,
-) -> Result<Vec<PrintRequest>, EslServiceError> {
+) -> Result<Vec<GenericEsl>, EslServiceError> {
     let url = format!("{}/esl/poll/{}", hublot_server_url, client_serial);
     debug!("Fetching esls status: {}", url);
     let response = client.get(url).send().await?;
-    let as_json: Vec<PrintRequest> = response.json().await?;
+    let as_json: Vec<GenericEsl> = response.json().await?;
     debug!("Got esl status: {:?}", as_json);
     Ok(as_json)
 }
