@@ -1,11 +1,10 @@
 use std::io;
 
 use crate::utils::unicode_string;
+use esl_services_api::types::generic_esl::GenericEsl;
 use log::debug;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-
-use super::generic_label::GenericEsl;
 
 /// The representation of the state of an Electronic Shelf Label
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -82,7 +81,7 @@ pub async fn get_print_requests(
     client: &Client,
     client_serial: &str,
 ) -> Result<Vec<GenericEsl>, EslServiceError> {
-    let url = format!("{}/esl/poll/{}", hublot_server_url, client_serial);
+    let url = format!("{}/esl-api/poll/{}", hublot_server_url, client_serial);
     debug!("Fetching esls status: {}", url);
     let response = client.get(url).send().await?;
     let as_json: Vec<GenericEsl> = response.json().await?;

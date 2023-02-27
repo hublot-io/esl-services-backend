@@ -1,5 +1,4 @@
 pub mod esl_service;
-pub mod generic_label;
 pub mod poll;
 pub mod pricer_service;
 pub mod parse_service;

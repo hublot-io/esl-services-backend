@@ -1,6 +1,6 @@
 use std::io;
 
-use super::{generic_label::GenericEsl};
+use esl_services_api::types::generic_esl::GenericEsl;
 use log::debug;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -90,11 +90,9 @@ pub async fn update_esl(
     pricer_password: Option<String>,
 ) -> Result<PricerEsl, PricerError> {
     let client = reqwest::Client::new();
-    let url = format!("{} /api/public/core/v1/items", esl_server_url);
-
+    let url = format!("{}/api/public/core/v1/items", esl_server_url);
     let user = pricer_user.expect("Pricer user is empty in the config file, please add 'pricer_user=<user name>' in hublot-config.toml");
     let pwd = pricer_password.expect("Pricer password is empty in the config file, please add 'pricer_password=<password>' in hublot-config.toml");
-
     let response = client
         .patch(url)
         .basic_auth(user, Some(pwd))
@@ -103,7 +101,7 @@ pub async fn update_esl(
         .await?;
 
     match response.status() {
-        StatusCode::OK => {
+        StatusCode::OK | StatusCode::ACCEPTED => {
             debug!("Esl server accepted our update")
         }
         _ => {
