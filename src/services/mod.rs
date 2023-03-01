@@ -45,6 +45,9 @@ pub fn build_client(
         let identity_builder = Identity::from_pem(&certificate_content)?;
         client_builder = client_builder.identity(identity_builder);
     }
-    let client = client_builder.build()?;
+
+    let client = client_builder
+        .use_rustls_tls()
+        .build()?;
     Ok(client)
 }

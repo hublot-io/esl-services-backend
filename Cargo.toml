@@ -1,8 +1,8 @@
 [package]
-name = "hublot-esl-backend"
+name = "esl-services-backend"
 version = "0.1.0"
 edition = "2021"
-
+build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -14,9 +14,19 @@ lazy_static = "1.4.0"
 uuid =  { version = "1.3.0", features = ["v4"] }
 log = "0.4.17"
 env_logger = "0.10.0"
-reqwest = { version = "0.11", features = ["json", "socks", "native-tls", "rustls-tls"] }
+reqwest = { version = "0.11", features = ["json", "socks", "rustls-tls", "native-tls-vendored"] }
 custom_error = "1.9.2"
 unidecode = "0.3.0"
 esl-services-api = {git="ssh://git@gitlab.hublot.io/hublot-crm/esl-services-api.git"}
 # esl-services-api = {path="../esl-services-api"}
 
+[build-dependencies]
+embed-resource = "1.7.1"
+
+
+# [profile.release]
+# strip = true
+# opt-level = "z"
+# lto = true
+# codegen-units = 1
+# panic = "abort"
