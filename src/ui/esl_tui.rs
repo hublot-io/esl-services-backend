@@ -1,18 +1,16 @@
+use ansi_to_tui::IntoText;
 use std::{
     io,
     time::{Duration, Instant},
 };
-
-
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout},
     style::{Color, Style},
-    widgets::{Block, Borders},
+    widgets::{Block, Borders, Paragraph},
     Frame, Terminal,
 };
 use tui_logger::{TuiLoggerLevelOutput, TuiLoggerWidget, TuiWidgetState};
-
 pub async fn run_ui<B: Backend>(terminal: &mut Terminal<B>, tick_rate: Duration) -> io::Result<()> {
     let mut last_tick = Instant::now();
     loop {
@@ -21,15 +19,7 @@ pub async fn run_ui<B: Backend>(terminal: &mut Terminal<B>, tick_rate: Duration)
         let _timeout = tick_rate
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
-        // if crossterm::event::poll(timeout)? {
-        //     if let Event::Key(key) = event::read()? {
-        //         if let KeyCode::Char('q') = key.code {
-        //             return Ok(());
-        //         }
-        //     }
-        // }
         if last_tick.elapsed() >= tick_rate {
-            // app.on_tick();
             last_tick = Instant::now();
         }
     }
@@ -42,16 +32,26 @@ fn ui<B: Backend>(f: &mut Frame<B>) {
         .constraints([Constraint::Percentage(20), Constraint::Percentage(80)].as_ref())
         .split(f.size());
 
-    let title_block = Block::default().title("Hublot PRICER Bridge");
-    f.render_widget(title_block, chunks[0]);
+    let title_chunks = Layout::default()
+        .direction(Direction::Horizontal)
+        .margin(0)
+        .constraints([Constraint::Percentage(26), Constraint::Percentage(74)].as_ref())
+        .split(chunks[0]);
 
+    let title_block = tui::widgets::Block::default()
+        .border_style(Style::default().fg(Color::White).bg(Color::Black))
+        .borders(Borders::ALL);
+
+    let raw = include_bytes!("../../logo.ansi.txt");
+    let text = raw.into_text().unwrap();
+
+    let text = Paragraph::new(text).block(title_block);
+    f.render_widget(text, title_chunks[0]);
     let filter_state = TuiWidgetState::new().set_default_display_level(log::LevelFilter::Debug);
-    // .set_level_for_target("New event", log::LevelFilter::Debug)
-    // .set_level_for_target("info", log::LevelFilter::Info);
     let tui_w = TuiLoggerWidget::default()
         .block(
             Block::default()
-                .title("Independent Tui Logger View")
+                .title("Logs")
                 .border_style(Style::default().fg(Color::White).bg(Color::Black))
                 .borders(Borders::ALL),
         )

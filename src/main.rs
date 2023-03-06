@@ -14,11 +14,7 @@ use std::{
     time::Duration,
 };
 use tokio::{task::JoinError, time::sleep};
-use tui::{
-    backend::CrosstermBackend,
-    Terminal,
-};
-
+use tui::{backend::CrosstermBackend, Terminal};
 
 custom_error! {
     /// An error that can occur when the lifetime of the App.
@@ -75,7 +71,7 @@ async fn main() -> Result<(), MainError> {
     let mut terminal = Terminal::new(backend)?;
 
     let spawn_ui = tokio::task::spawn(async move {
-        ui::esl_tui::run_ui(&mut terminal, Duration::from_millis(100))
+        ui::esl_tui::run_ui(&mut terminal, Duration::from_millis(500))
             .await
             .expect("msg")
     });
