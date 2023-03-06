@@ -1,5 +1,4 @@
 pub mod esl_service;
-pub mod parse_service;
 pub mod poll;
 pub mod pricer_service;
 use custom_error::custom_error;
@@ -46,8 +45,6 @@ pub fn build_client(
         client_builder = client_builder.identity(identity_builder);
     }
 
-    let client = client_builder
-        .use_rustls_tls()
-        .build()?;
+    let client = client_builder.use_rustls_tls().build()?;
     Ok(client)
 }

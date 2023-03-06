@@ -1,7 +1,7 @@
 use std::io;
 
 use crate::utils::unicode_string;
-use esl_services_api::types::generic_esl::GenericEsl;
+use esl_utils::generic_esl::GenericEsl;
 use log::debug;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};

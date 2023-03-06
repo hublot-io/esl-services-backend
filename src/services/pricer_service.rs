@@ -1,6 +1,6 @@
 use std::io;
 
-use esl_services_api::types::generic_esl::GenericEsl;
+use esl_utils::generic_esl::GenericEsl;
 use log::debug;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -20,59 +20,46 @@ custom_error! {
 struct PricerFishProperties {
     #[serde(rename = "FISH_CALIBRE")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_calibre: Option<String>,
     #[serde(rename = "FISH_ENGIN")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_engin: Option<String>,
-    #[serde(rename = "FISH_ENGIN2")]
+    #[serde(rename = "FISH_ENGIN_2")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_engin_2: Option<String>,
-    #[serde(rename = "FISH_ENGIN3")]
+    #[serde(rename = "FISH_ENGIN_3")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_engin_3: Option<String>,
     #[serde(rename = "FISH_INFO")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_info: Option<String>,
     #[serde(rename = "FISH_NAME")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_name: Option<String>,
     #[serde(rename = "FISH_NAME_2")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_name_2: Option<String>,
     #[serde(rename = "FISH_NAME_SCIEN")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_name_scien: Option<String>,
     #[serde(rename = "FISH_ORIGIN")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_origin: Option<String>,
-    #[serde(rename = "FISH_ORIGIN2")]
+    #[serde(rename = "FISH_ORIGIN_2")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_origin_2: Option<String>,
     #[serde(rename = "FISH_PRODUCTION")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_production: Option<String>,
     #[serde(rename = "FISH_SIZE")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     fish_size: Option<String>,
     #[serde(rename = "PLU")]
     #[serde_as(as = "NoneAsEmptyString")]
-
     plu: Option<String>,
     #[serde_as(as = "NoneAsEmptyString")]
     #[serde(rename = "PRICE_INFOS")]
-    price_infos: Option<String>
+    price_infos: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -97,16 +84,23 @@ impl From<GenericEsl> for PricerEsl {
             fish_info: value.congel_infos,
             fish_name_2: None,
             fish_name_scien: Some(value.nom_scientifique),
-
             // if peche: origin= Zone FAO: (zoneCode, sousZoneCode)
             // if peche: origin2=  zoneCode / sousZone
-            fish_origin: Some(format!("Zone FAO: ({} {})", value.zone_code.unwrap(), value.sous_zone_code.unwrap())) ,
-            fish_origin_2:  Some(format!("{} / {}", value.zone.unwrap(), value.sous_zone.unwrap())),
+            fish_origin: Some(format!(
+                "Zone FAO: ({} {})",
+                value.zone_code.unwrap(),
+                value.sous_zone_code.unwrap()
+            )),
+            fish_origin_2: Some(format!(
+                "{} / {}",
+                value.zone.unwrap(),
+                value.sous_zone.unwrap()
+            )),
 
             fish_production: None,
             fish_size: Some(value.taille),
             plu: Some(value.plu),
-            price_infos: Some(value.infos_prix)
+            price_infos: Some(value.infos_prix),
         };
         Self {
             item_id: value.id,
@@ -120,7 +114,7 @@ impl From<GenericEsl> for PricerEsl {
 
 struct PricerAccepted {
     #[serde(rename = "requestId")]
-    request_id: i32
+    request_id: i32,
 }
 pub async fn update_esl(
     esl: PricerEsl,
@@ -141,7 +135,7 @@ pub async fn update_esl(
         .await?;
     match response.status() {
         StatusCode::OK | StatusCode::ACCEPTED => {
-            let body: PricerAccepted = response.json().await?;
+            let _body: PricerAccepted = response.json().await?;
             debug!("Esl server accepted our update")
         }
         _ => {
