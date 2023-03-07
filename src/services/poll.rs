@@ -28,8 +28,8 @@ pub async fn poll(
     client_serial: &str,
     hublot_server_url: &str,
     esl_server_url: &str,
-    pricer_user: Option<String>,
-    pricer_password: Option<String>,
+    pricer_user: String,
+    pricer_password: String,
     client: Client,
     polling_rate: Option<i32>,
 ) -> Result<(), PollingError> {
@@ -44,7 +44,7 @@ pub async fn poll(
             .collect();
 
         for pricer_esl in pricer_requests {
-            pricer_service::update_esl(
+            pricer_service::on_poll(
                 pricer_esl,
                 esl_server_url,
                 pricer_user.clone(),

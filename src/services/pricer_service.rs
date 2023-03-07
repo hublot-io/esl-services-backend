@@ -6,18 +6,22 @@ use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
 
+use super::pricer::{item::update_item, labels::map_esl_to_id, status::items_result};
+
 custom_error! {
- /// An error that can occur while handling pricer Esls.
+    /// An error that can occur while handling pricer Esls.
     ///
     /// This error can be seamlessly converted to an `io::Error` and `reqwest::Error` via a `From`
     /// implementation.
     pub PricerError
         Reqwest{source: reqwest::Error} = "An issue occured within this request: {source}",
         Io{source: io::Error}= "An I/O error occured: {source}",
+        MissingItem = "Cannot find an item linked to this barcode",
+        UpdateFailed{id: String} = "PricerError, cannot update this item: {id}"
 }
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct PricerFishProperties {
+pub struct PricerFishProperties {
     #[serde(rename = "FISH_CALIBRE")]
     #[serde_as(as = "NoneAsEmptyString")]
     fish_calibre: Option<String>,
@@ -64,12 +68,14 @@ struct PricerFishProperties {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PricerEsl {
-    #[serde(rename = "itemId")]
-    item_id: String,
+    #[serde(rename = "eslId")]
+    pub barcode: String,
+    #[serde(rename = "objectId")]
+    pub item_id: String,
     #[serde(rename = "itemName")]
-    item_name: String,
-    price: String,
-    properties: PricerFishProperties,
+    pub item_name: String,
+    pub price: String,
+    pub properties: PricerFishProperties,
 }
 
 impl From<GenericEsl> for PricerEsl {
@@ -103,44 +109,41 @@ impl From<GenericEsl> for PricerEsl {
             price_infos: Some(value.infos_prix),
         };
         Self {
-            item_id: value.id,
+            item_id: value.object_id.unwrap(),
+            barcode: value.id,
             item_name: value.nom,
             price: value.prix,
             properties,
         }
     }
 }
-#[derive(Serialize, Deserialize, Clone, Debug)]
 
-struct PricerAccepted {
-    #[serde(rename = "requestId")]
-    request_id: i32,
-}
-pub async fn update_esl(
-    esl: PricerEsl,
+
+
+
+
+
+
+// pub async fn check_status(
+//     esl: PricerEsl,
+//     esl_server_url: &str,
+//     pricer_user: String,
+//     pricer_password: String
+// )-> Result<PricerEsl, PricerError> {}
+
+pub async fn on_poll(esl: PricerEsl,
     esl_server_url: &str,
-    pricer_user: Option<String>,
-    pricer_password: Option<String>,
+    pricer_user: String,
+    pricer_password: String,
 ) -> Result<PricerEsl, PricerError> {
-    let client = reqwest::Client::new();
-    let url = format!("{}/api/public/core/v1/items", esl_server_url);
-    let user = pricer_user.expect("Pricer user is empty in the config file, please add 'pricer_user=<user name>' in hublot-config.toml");
-    let pwd = pricer_password.expect("Pricer password is empty in the config file, please add 'pricer_password=<password>' in hublot-config.toml");
-    let payload = vec![&esl];
-    let response = client
-        .patch(url)
-        .basic_auth(user, Some(pwd))
-        .json(&payload)
-        .send()
-        .await?;
-    match response.status() {
-        StatusCode::OK | StatusCode::ACCEPTED => {
-            let _body: PricerAccepted = response.json().await?;
-            debug!("Esl server accepted our update")
-        }
-        _ => {
-            debug!("Esl server denied the update: {}", response.status())
-        }
-    }
-    Ok(esl)
+    //first: We need to map the esl barcode to a pricer item_id
+    let mapped_esl = map_esl_to_id(esl, esl_server_url, pricer_user.clone(), pricer_password.clone()).await?;
+
+    // then we can request pricer to update the item with the matching id
+    let update_request = update_item(mapped_esl.clone(), esl_server_url, pricer_user.clone(), pricer_password.clone()).await?;
+
+    // then we can send the request id back to the api
+    let update_status = items_result(update_request, esl_server_url,pricer_user.clone(),pricer_password.clone()).await?;
+
+    Ok(mapped_esl)
 }

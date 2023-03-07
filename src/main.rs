@@ -38,8 +38,9 @@ async fn polling_worker(config: Settings) -> Result<(), MainError> {
         &config.client_serial,
         &config.hublot_server_url,
         &config.esl_server_url,
-        config.pricer_user,
-        config.pricer_password,
+        // we already made sure that both useer&password exists
+        config.pricer_user.unwrap(),
+        config.pricer_password.unwrap(),
         polling_client,
         config.polling_rate,
     )
@@ -77,6 +78,11 @@ async fn main() -> Result<(), MainError> {
     });
 
     let spawn_poll = tokio::task::spawn(async move {
+        { 
+            let app_config = app_config.clone();
+            app_config.pricer_user.expect("Pricer user is empty in the config file, please add 'pricer_user=<user name>' in hublot-config.toml");
+            app_config.pricer_password.expect("Pricer password is empty in the config file, please add 'pricer_password=<password>' in hublot-config.toml");
+        }
         loop {
             let app_config = app_config.clone();
             let poller = tokio::task::spawn(async move { polling_worker(app_config).await }).await;
