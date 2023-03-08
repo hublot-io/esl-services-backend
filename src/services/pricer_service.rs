@@ -26,13 +26,13 @@ pub struct PricerFishProperties {
     #[serde_as(as = "NoneAsEmptyString")]
     fish_calibre: Option<String>,
     #[serde(rename = "FISH_ENGIN")]
-    #[serde_as(as = "NoneAsEmptyString")]
+    // #[serde_as(as = "NoneAsEmptyString")]
     fish_engin: Option<String>,
     #[serde(rename = "FISH_ENGIN_2")]
-    #[serde_as(as = "NoneAsEmptyString")]
+    // #[serde_as(as = "NoneAsEmptyString")]
     fish_engin_2: Option<String>,
     #[serde(rename = "FISH_ENGIN_3")]
-    #[serde_as(as = "NoneAsEmptyString")]
+    // #[serde_as(as = "NoneAsEmptyString")]
     fish_engin_3: Option<String>,
     #[serde(rename = "FISH_INFO")]
     #[serde_as(as = "NoneAsEmptyString")]
@@ -61,20 +61,25 @@ pub struct PricerFishProperties {
     #[serde(rename = "PLU")]
     #[serde_as(as = "NoneAsEmptyString")]
     plu: Option<String>,
+    #[serde(rename = "ALLERGENES")]
     #[serde_as(as = "NoneAsEmptyString")]
-    #[serde(rename = "PRICE_INFOS")]
-    price_infos: Option<String>,
+    allergenes: Option<String>,
+    #[serde(rename = "PROMO")]
+    #[serde_as(as = "NoneAsEmptyString")]
+    promo: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PricerEsl {
     #[serde(rename = "eslId")]
     pub barcode: String,
-    #[serde(rename = "objectId")]
+    #[serde(alias = "objectId", rename = "itemId")]
     pub item_id: String,
     #[serde(rename = "itemName")]
     pub item_name: String,
-    pub price: String,
+    /// price can be None because in some case
+    /// it will be filled by an other software
+    pub price: Option<String>,
     pub properties: PricerFishProperties,
 }
 
@@ -83,7 +88,8 @@ impl From<GenericEsl> for PricerEsl {
         let properties = PricerFishProperties {
             fish_name: Some(value.nom.clone()),
             fish_calibre: None,
-            fish_engin: value.engin.map(|engin| format!("Peché: {}", engin)),
+            /// origin = the product was not fished therefore there is no fishing gear
+            fish_engin: if value.origine.is_some() {None} else {value.engin} ,
             fish_engin_2: None,
             fish_engin_3: None,
             // guessing this is congel infos
@@ -92,37 +98,24 @@ impl From<GenericEsl> for PricerEsl {
             fish_name_scien: Some(value.nom_scientifique),
             // if peche: origin= Zone FAO: (zoneCode, sousZoneCode)
             // if peche: origin2=  zoneCode / sousZone
-            fish_origin: Some(format!(
-                "Zone FAO: ({} {})",
-                value.zone_code.unwrap(),
-                value.sous_zone_code.unwrap()
-            )),
-            fish_origin_2: Some(format!(
-                "{} / {}",
-                value.zone.unwrap(),
-                value.sous_zone.unwrap()
-            )),
+            fish_origin: Some(value.origine.unwrap_or(value.zone.unwrap_or_default())),
+            fish_origin_2: Some(value.sous_zone.unwrap_or_default()),
 
-            fish_production: None,
+            fish_production: value.production,
             fish_size: Some(value.taille),
             plu: Some(value.plu),
-            price_infos: Some(value.infos_prix),
+            allergenes: value.allergenes,
+            promo: None,
         };
         Self {
             item_id: value.object_id.unwrap(),
             barcode: value.id,
             item_name: value.nom,
-            price: value.prix,
+            price: None,
             properties,
         }
     }
 }
-
-
-
-
-
-
 
 // pub async fn check_status(
 //     esl: PricerEsl,
@@ -131,19 +124,42 @@ impl From<GenericEsl> for PricerEsl {
 //     pricer_password: String
 // )-> Result<PricerEsl, PricerError> {}
 
-pub async fn on_poll(esl: PricerEsl,
+pub async fn on_poll(
+    esl: PricerEsl,
     esl_server_url: &str,
     pricer_user: String,
     pricer_password: String,
 ) -> Result<PricerEsl, PricerError> {
     //first: We need to map the esl barcode to a pricer item_id
-    let mapped_esl = map_esl_to_id(esl, esl_server_url, pricer_user.clone(), pricer_password.clone()).await?;
+    let mapped_esl = map_esl_to_id(
+        esl,
+        esl_server_url,
+        pricer_user.clone(),
+        pricer_password.clone(),
+    )
+    .await?;
+
+    debug!("Got mapped ESL: {:?}", mapped_esl);
 
     // then we can request pricer to update the item with the matching id
-    let update_request = update_item(mapped_esl.clone(), esl_server_url, pricer_user.clone(), pricer_password.clone()).await?;
+    let update_request = update_item(
+        mapped_esl.clone(),
+        esl_server_url,
+        pricer_user.clone(),
+        pricer_password.clone(),
+    )
+    .await?;
+    debug!("Got request status: {:?}", update_request);
 
     // then we can send the request id back to the api
-    let update_status = items_result(update_request, esl_server_url,pricer_user.clone(),pricer_password.clone()).await?;
+    let update_status = items_result(
+        update_request,
+        esl_server_url,
+        pricer_user.clone(),
+        pricer_password.clone(),
+    )
+    .await?;
+    debug!("Got update_status {:?}", update_status);
 
     Ok(mapped_esl)
 }

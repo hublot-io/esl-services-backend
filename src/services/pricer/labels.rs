@@ -11,7 +11,7 @@ struct PricerLinks {
     #[serde(rename = "itemId")]
     item_id: String,
     #[serde(rename = "displayPosition")]
-    display_position: String,
+    display_position: i32,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -34,13 +34,11 @@ pub async fn map_esl_to_id(
         "{}/api/public/core/v1/labels/{}",
         esl_server_url, esl.barcode
     );
-
     let response = client.get(url).basic_auth(pricer_user, Some(pricer_password)).send().await?;
 
     match response.status() {
         StatusCode::OK => {
             let body: PricerLabels = response.json().await?;
-            debug!("We found matching items for this barcode");
             // Default implem: use the first item linked to this barcode
             match body.links.get(0) {
                 Some(link) => {
