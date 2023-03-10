@@ -2,8 +2,8 @@ use std::io;
 
 use crate::utils::unicode_string;
 use esl_utils::generic_esl::GenericEsl;
-use log::debug;
-use reqwest::Client;
+use log::trace;
+use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 
 /// The representation of the state of an Electronic Shelf Label
@@ -82,9 +82,15 @@ pub async fn get_print_requests(
     client_serial: &str,
 ) -> Result<Vec<GenericEsl>, EslServiceError> {
     let url = format!("{}/esl-api/poll/{}", hublot_server_url, client_serial);
-    debug!("Fetching esls status: {}", url);
+    trace!("Fetching esls status: {}", url);
     let response = client.get(url).send().await?;
     let as_json: Vec<GenericEsl> = response.json().await?;
-    debug!("Got esl status: {:?}", as_json);
+    trace!("Got esl status: {:?}", as_json);
     Ok(as_json)
+}
+
+pub async fn status(hublot_server_url: &str, client: &Client) -> Result<bool, EslServiceError> {
+    let url = format!("{}/esl-api/status", hublot_server_url);
+    let response = client.get(url).send().await?;
+    Ok(response.status() == StatusCode::OK)
 }

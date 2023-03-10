@@ -1,20 +1,57 @@
+#![feature(async_fn_in_trait)]
 #[macro_use]
 extern crate custom_error;
 mod services;
 mod settings;
-mod ui;
 mod utils;
-use crossterm::{terminal, ExecutableCommand};
+use chrono::Local;
+use console::{style, Emoji, Term};
 use custom_error::{custom_error, Error};
+use env_logger::Env;
+use esl_utils::parse::ParseClient;
+
 use log::{debug, error};
+use services::pricer_service::PricerError;
 use services::{build_client, esl_service::EslServiceError, poll::PollingError, ClientError};
 use settings::Settings;
+
+use std::io::Write;
 use std::{
-    io::{self, stdout},
+    fs::File,
+    io::{self},
     time::Duration,
 };
 use tokio::{task::JoinError, time::sleep};
-use tui::{backend::CrosstermBackend, Terminal};
+
+use crate::services::parse_log::ParseLog;
+
+#[cfg(target_family = "windows")]
+static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "Θ  ");
+#[cfg(target_family = "unix")]
+static LOOKING_GLASS: Emoji<'_, '_> = Emoji("🔍  ", "🔍  ");
+#[cfg(target_family = "windows")]
+static CONFIG: Emoji<'_, '_> = Emoji("⚙️  ", "⌂  ");
+#[cfg(target_family = "unix")]
+static CONFIG: Emoji<'_, '_> = Emoji("⚙️  ", "⚙️  ");
+
+#[cfg(target_family = "windows")]
+static ROCKET: Emoji<'_, '_> = Emoji("🚀  ", "☼  ");
+#[cfg(target_family = "unix")]
+static ROCKET: Emoji<'_, '_> = Emoji("🚀  ", "🚀  ");
+
+#[cfg(target_family = "windows")]
+macro_rules! LOG_PLACEHOLDER {
+    () => {
+        "{}:{} {} [{}] - {} \r\n"
+    };
+}
+
+#[cfg(target_family = "unix")]
+macro_rules! LOG_PLACEHOLDER {
+    () => {
+        "{}:{} {} [{}] - {}"
+    };
+}
 
 custom_error! {
     /// An error that can occur when the lifetime of the App.
@@ -28,7 +65,8 @@ custom_error! {
         Io{source: io::Error}= "An I/O error occured: {source}",
         PollingError{source: PollingError}= @{ format!("An error occured with the polling service: {:?}", source.source().unwrap() )} ,
         JoinError{source: JoinError}= "A tokio error occured while joining our process loop : {source}",
-
+        PricerError{source: PricerError} = "An issue occured while calling the Pricer Server: {source}",
+        Todo = "TODO: Missing implementation"
 }
 
 /// the background_task that starts the polling worker and updates the display of the ESLs
@@ -50,38 +88,90 @@ async fn polling_worker(config: Settings) -> Result<(), MainError> {
 
 #[tokio::main]
 async fn main() -> Result<(), MainError> {
-    let drain = tui_logger::Drain::new();
-    env_logger::Builder::new()
-        .filter_level(log::LevelFilter::Debug)
-        .format(move |_buf, record| {
-            // patch the env-logger entry through our drain to the tui-logger
-            drain.log(record);
-            Ok(())
-        })
-        .init();
-
-    let mut stdout = stdout();
-    stdout.execute(terminal::Clear(terminal::ClearType::All))?;
+    let t = Term::stdout();
+    t.clear_screen()?;
+    let log_file = Box::new(File::create("hublot-logs.txt").expect("Can't create log file"));
 
     let app_config = Settings::new()
         .expect("Cannot parse the configuration file, make sure that it is complete");
+
+    let log_level = app_config.clone().log_level.unwrap_or("warn".to_string());
+    let envconf = Env::default().default_filter_or(&log_level);
+    let parse_client = ParseClient::new(
+        app_config
+            .clone()
+            .parse_id
+            .expect("Missing parse configuration key: [parse_id]"),
+        app_config
+            .clone()
+            .parse_token
+            .expect("Missing parse configuration key: [parse_token]"),
+        app_config
+            .clone()
+            .parse_url
+            .expect("Missing parse configuration key: [parse_url]"),
+    );
+    let log_config = app_config.clone();
+    env_logger::Builder::from_env(envconf)
+        .format(move |buf, record| {
+            writeln!(
+                buf,
+                LOG_PLACEHOLDER!(),
+                record.file_static().unwrap_or("unknown"),
+                record.line().unwrap_or(0),
+                Local::now().format("%Y-%m-%dT%H:%M:%S%.3f"),
+                record.level(),
+                record.args()
+            )
+            .expect("Cannot write log to file");
+            if record.target().contains("esl_services_backend") {
+                let parse_client = parse_client.clone();
+                let log_config = log_config.clone();
+                let log = ParseLog {
+                    app: "hublot-esl-backend".to_string(),
+                    level: record.level().to_string(),
+                    message: record.args().to_string(),
+                    serial: log_config.client_serial,
+                };
+                tokio::task::spawn(async move {
+                    parse_client
+                        .clone()
+                        .save("parse/classes/Log".to_string(), log)
+                        .await
+                });
+            }
+            Ok(())
+        })
+        .target(env_logger::Target::Pipe(log_file))
+        .init();
+
+    let logo = include_str!("../logo.ansi.txt");
+
+    println!("{}", logo);
+
+    println!(
+        "{} {}Loading app configuration...",
+        style("[1/3]").bold().dim(),
+        CONFIG
+    );
+
     debug!("Fetched config from file {:?}", app_config);
 
-    let stdout = io::stdout();
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
-
-    let spawn_ui = tokio::task::spawn(async move {
-        ui::esl_tui::run_ui(&mut terminal, Duration::from_millis(500))
-            .await
-            .expect("msg")
-    });
-
     let spawn_poll = tokio::task::spawn(async move {
-        { 
+        {
+            println!(
+                "{} {}Checking if the config is complete...",
+                style("[2/3]").bold().dim(),
+                LOOKING_GLASS
+            );
             let app_config = app_config.clone();
             app_config.pricer_user.expect("Pricer user is empty in the config file, please add 'pricer_user=<user name>' in hublot-config.toml");
             app_config.pricer_password.expect("Pricer password is empty in the config file, please add 'pricer_password=<password>' in hublot-config.toml");
+            println!(
+                "{} {}Starting the application loop...",
+                style("[3/3]").bold().dim(),
+                ROCKET
+            );
         }
         loop {
             let app_config = app_config.clone();
@@ -107,9 +197,7 @@ async fn main() -> Result<(), MainError> {
             sleep(Duration::from_millis(2000)).await;
         }
     });
-
-    let (poll_result, ui_result) = tokio::join!(spawn_poll, spawn_ui);
+    let (poll_result,) = tokio::join!(spawn_poll);
     poll_result.expect("Polling stopped for some unknown reason");
-    ui_result.expect("Ui stopped for some unknown reason");
     Ok(())
 }

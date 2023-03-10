@@ -1,9 +1,8 @@
 use log::debug;
 use reqwest::StatusCode;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::services::pricer_service::{PricerEsl, PricerError};
-
+use crate::services::pricer_service::{PricerError, PricerEsl};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct PricerLinks {
@@ -34,7 +33,11 @@ pub async fn map_esl_to_id(
         "{}/api/public/core/v1/labels/{}",
         esl_server_url, esl.barcode
     );
-    let response = client.get(url).basic_auth(pricer_user, Some(pricer_password)).send().await?;
+    let response = client
+        .get(url)
+        .basic_auth(pricer_user, Some(pricer_password))
+        .send()
+        .await?;
 
     match response.status() {
         StatusCode::OK => {
@@ -47,7 +50,7 @@ pub async fn map_esl_to_id(
                     updated.item_id = id.clone();
                     Ok(updated)
                 }
-                None => Err(PricerError::MissingItem)
+                None => Err(PricerError::MissingItem),
             }
         }
         _ => {

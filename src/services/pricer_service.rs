@@ -1,12 +1,11 @@
 use std::io;
 
+use super::pricer::{item::update_item, labels::map_esl_to_id, status::items_result};
 use esl_utils::generic_esl::GenericEsl;
+use indicatif::ProgressBar;
 use log::debug;
-use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
-
-use super::pricer::{item::update_item, labels::map_esl_to_id, status::items_result};
 
 custom_error! {
     /// An error that can occur while handling pricer Esls.
@@ -89,7 +88,11 @@ impl From<GenericEsl> for PricerEsl {
             fish_name: Some(value.nom.clone()),
             fish_calibre: None,
             /// origin = the product was not fished therefore there is no fishing gear
-            fish_engin: if value.origine.is_some() {None} else {value.engin} ,
+            fish_engin: if value.origine.is_some() {
+                None
+            } else {
+                value.engin
+            },
             fish_engin_2: None,
             fish_engin_3: None,
             // guessing this is congel infos
@@ -129,8 +132,11 @@ pub async fn on_poll(
     esl_server_url: &str,
     pricer_user: String,
     pricer_password: String,
+    pb: &ProgressBar,
 ) -> Result<PricerEsl, PricerError> {
     //first: We need to map the esl barcode to a pricer item_id
+    pb.inc(1);
+    pb.set_message(format!("[1/3] Getting items for esl id {}", esl.barcode));
     let mapped_esl = map_esl_to_id(
         esl,
         esl_server_url,
@@ -140,7 +146,8 @@ pub async fn on_poll(
     .await?;
 
     debug!("Got mapped ESL: {:?}", mapped_esl);
-
+    pb.inc(1);
+    pb.set_message(format!("[2/3] Updating item id {}", mapped_esl.item_id));
     // then we can request pricer to update the item with the matching id
     let update_request = update_item(
         mapped_esl.clone(),
@@ -150,7 +157,11 @@ pub async fn on_poll(
     )
     .await?;
     debug!("Got request status: {:?}", update_request);
-
+    pb.inc(1);
+    pb.set_message(format!(
+        "[3/3] Checking update status for request_id {}",
+        update_request.request_id
+    ));
     // then we can send the request id back to the api
     let update_status = items_result(
         update_request,

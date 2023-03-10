@@ -1,9 +1,8 @@
 use log::debug;
 use reqwest::StatusCode;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::services::pricer_service::{PricerEsl, PricerError};
-
+use crate::services::pricer_service::{PricerError, PricerEsl};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 
@@ -33,7 +32,7 @@ pub async fn update_item(
             debug!("Esl server accepted our update");
             Ok(body)
         }
-        reqwest_error => {
+        _reqwest_error => {
             debug!("Esl server denied the update: {}", response.status());
             Err(PricerError::UpdateFailed { id: esl.item_id })
         }

@@ -7,6 +7,7 @@ pub struct Settings {
     pub client_serial: String,
     pub proxy_cs: Option<String>,
     pub certificate_path: Option<String>,
+    pub log_level: Option<String>,
     pub esl_server_url: String,
     pub hublot_server_url: String,
     pub polling_rate: Option<i32>,
@@ -14,6 +15,7 @@ pub struct Settings {
     pub pricer_password: Option<String>,
     pub parse_id: Option<String>,
     pub parse_token: Option<String>,
+    pub parse_url: Option<String>,
 }
 
 impl Settings {
