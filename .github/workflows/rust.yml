@@ -20,6 +20,7 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
+          target: x86_64-pc-windows-gnu
 
     - name: Build
       uses: actions-rs/cargo@v1
