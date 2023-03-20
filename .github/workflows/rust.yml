@@ -21,18 +21,20 @@ jobs:
           override: true
           components: rustfmt, clippy
           target: x86_64-pc-windows-gnu
-
+          
+    - name: Build Win
+      uses: actions-rs/cargo@v1
+      with: 
+        command: build 
+        args: --release --target x86_64-pc-windows-gnu
+        
     - name: Build
       uses: actions-rs/cargo@v1
       with: 
         command: build 
         args: --verbose
         
-    - name: Build Win
-      uses: actions-rs/cargo@v1
-      with: 
-        command: build 
-        args: --release --target x86_64-pc-windows-gnu
+
 
     - name: Run tests
       uses: actions-rs/cargo@v1
