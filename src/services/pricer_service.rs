@@ -103,9 +103,9 @@ impl From<GenericEsl> for PricerEsl {
             // if peche: origin2=  zoneCode / sousZone
             fish_origin: Some(value.origine.unwrap_or(value.zone.unwrap_or_default())),
             fish_origin_2: Some(value.sous_zone.unwrap_or_default()),
-
             fish_production: value.production,
-            fish_size: Some(value.taille),
+            // Pricer: Size and price are set by an internal software, we should no override these fields
+            fish_size: None,
             plu: Some(value.plu),
             allergenes: value.allergenes,
             promo: None,

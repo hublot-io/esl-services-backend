@@ -71,7 +71,12 @@ custom_error! {
 
 /// the background_task that starts the polling worker and updates the display of the ESLs
 async fn polling_worker(config: Settings) -> Result<(), MainError> {
-    let polling_client = build_client(config.proxy_cs, config.certificate_path)?;
+    let polling_client = build_client(
+        config.proxy_cs,
+        config.certificate_pem_path,
+        config.certificate_root_path,
+    )?;
+
     services::poll::poll(
         &config.client_serial,
         &config.hublot_server_url,
@@ -102,10 +107,7 @@ async fn main() -> Result<(), MainError> {
             .clone()
             .parse_id
             .expect("Missing parse configuration key: [parse_id]"),
-        app_config
-            .clone()
-            .parse_token
-            .expect("Missing parse configuration key: [parse_token]"),
+        None,
         app_config
             .clone()
             .parse_url
@@ -147,7 +149,7 @@ async fn main() -> Result<(), MainError> {
 
     let logo = include_str!("../logo.ansi.txt");
 
-    println!("{}", logo);
+    println!("{logo}");
 
     println!(
         "{} {}Loading app configuration...",

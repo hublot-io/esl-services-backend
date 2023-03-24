@@ -18,7 +18,7 @@ pub async fn update_item(
     pricer_password: String,
 ) -> Result<PricerAccepted, PricerError> {
     let client = reqwest::Client::new();
-    let url = format!("{}/api/public/core/v1/items", esl_server_url);
+    let url = format!("{esl_server_url}/api/public/core/v1/items");
     let payload = vec![&esl];
     let response = client
         .patch(url)

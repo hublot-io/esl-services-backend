@@ -1,3 +1,4 @@
 /target
 hublot-config.toml
 hublot-logs.txt
+*.pem

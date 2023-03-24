@@ -1,8 +1,8 @@
-use std::io;
+use std::{io, str::Utf8Error};
 
 use crate::utils::unicode_string;
 use esl_utils::generic_esl::GenericEsl;
-use log::trace;
+use log::{trace, debug};
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -72,7 +72,9 @@ custom_error! {
     /// implementation.
     pub EslServiceError
         Reqwest{source: reqwest::Error} = "An issue occured within this request: {source}",
-        Io{source: io::Error}= "An I/O error occured: {source}"
+        Io{source: io::Error}= "An I/O error occured: {source}",
+        Custom{status: StatusCode, content: String } = "Request failed: code={status} payload={content}",
+        Utf8Error{source: Utf8Error} = "Utf8Error: {source}"
 }
 
 /// Fetches the polling route of the provided `server_url` to get the ESLs that we have to print
@@ -81,16 +83,27 @@ pub async fn get_print_requests(
     client: &Client,
     client_serial: &str,
 ) -> Result<Vec<GenericEsl>, EslServiceError> {
-    let url = format!("{}/esl-api/poll/{}", hublot_server_url, client_serial);
+    let url = format!("{hublot_server_url}/esl-api/poll/{client_serial}");
     trace!("Fetching esls status: {}", url);
     let response = client.get(url).send().await?;
-    let as_json: Vec<GenericEsl> = response.json().await?;
-    trace!("Got esl status: {:?}", as_json);
-    Ok(as_json)
+    
+    match response.status(){ 
+        StatusCode::OK => {
+            let as_json: Vec<GenericEsl> = response.json().await?;
+            trace!("Got esl status: {:?}", as_json);
+            Ok(as_json)
+        }
+        status => {
+            let content = response.bytes().await?;
+            let as_str = std::str::from_utf8(&content)?;
+            debug!("Esl service error: status={status}, payload={as_str}");
+            Err(EslServiceError::Custom { status: status, content: as_str.to_string() })
+        }
+    }
 }
 
 pub async fn status(hublot_server_url: &str, client: &Client) -> Result<bool, EslServiceError> {
-    let url = format!("{}/esl-api/status", hublot_server_url);
+    let url = format!("{hublot_server_url}/esl-api/status");
     let response = client.get(url).send().await?;
     Ok(response.status() == StatusCode::OK)
 }

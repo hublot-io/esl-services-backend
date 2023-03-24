@@ -5,7 +5,7 @@ pub mod pricer;
 pub mod pricer_service;
 use custom_error::custom_error;
 use log::debug;
-use reqwest::{Client, ClientBuilder, Identity, Proxy};
+use reqwest::{Client, ClientBuilder, Identity, Proxy, Certificate};
 use std::io::Read;
 use std::{fs::File, io};
 
@@ -32,21 +32,24 @@ fn read_certificate(certificate_path: &str) -> Result<Vec<u8>, ClientError> {
 /// and Authentication with our servers.
 pub fn build_client(
     proxy_cs: Option<String>,
-    certificate_path: Option<String>,
+    certificate_pem: Option<String>,
+    certificate_root: Option<String>
 ) -> Result<Client, ClientError> {
-    let mut client_builder = ClientBuilder::new();
+    let mut client_builder = ClientBuilder::new().use_rustls_tls();
     if let Some(cs) = proxy_cs {
         debug!("Config contains a proxy connection string, adding it to the http client");
         let proxy_builder = Proxy::https(cs)?;
         client_builder = client_builder.proxy(proxy_builder)
     }
-    if let Some(certificate) = certificate_path {
+    if let (Some(pem), Some(root)) = (certificate_pem, certificate_root) {
         debug!("Config contains a certificate, adding it to the http client");
-        let certificate_content = read_certificate(&certificate)?;
-        let identity_builder = Identity::from_pem(&certificate_content)?;
+        let pem_content = read_certificate(&pem)?;
+        let root_content = read_certificate(&root)?;
+        let identity_builder = Identity::from_pem(&pem_content)?;
         client_builder = client_builder.identity(identity_builder);
+        let cert = Certificate::from_pem(&root_content)?;
+        client_builder = client_builder.add_root_certificate(cert);
     }
-
-    let client = client_builder.use_rustls_tls().build()?;
+    let client = client_builder.build()?;
     Ok(client)
 }

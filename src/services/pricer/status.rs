@@ -27,7 +27,7 @@ pub async fn item_status(
     pricer_password: String,
 ) -> Result<bool, PricerError> {
     let client = reqwest::Client::new();
-    let url = format!("{}/api/public/core/v1/items", esl_server_url);
+    let url = format!("{esl_server_url}/api/public/core/v1/items");
     let response = client
         .get(url)
         .basic_auth(pricer_user, Some(pricer_password))

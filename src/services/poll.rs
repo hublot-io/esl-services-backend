@@ -44,7 +44,7 @@ pub async fn poll(
     pb.set_prefix(format!("[{}/∞]", 0));
 
     loop {
-        pb.set_message(format!("polling_broker: Getting print requests"));
+        pb.set_message("polling_broker: Getting print requests".to_string());
         let print_requests = get_print_requests(hublot_server_url, &client, client_serial).await?;
         pb.inc(1);
         let pricer_requests: Vec<PricerEsl> = print_requests
@@ -52,7 +52,7 @@ pub async fn poll(
             .map(|esl| esl.clone().into())
             .collect();
 
-        if pricer_requests.len() > 0 {
+        if !pricer_requests.is_empty() {
             let ids: Vec<String> = pricer_requests
                 .iter()
                 .map(|p| p.barcode.to_string())
@@ -83,7 +83,7 @@ pub async fn poll(
         // Divide the time we have to wait so we can animate the spinner
         let mut wait = 0;
         let time = 150;
-        pb.set_message(format!("Waiting for a new update"));
+        pb.set_message("Waiting for a new update".to_string());
         loop {
             pb.inc(1);
             sleep(Duration::from_millis(time as u64)).await;

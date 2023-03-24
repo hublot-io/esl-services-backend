@@ -494,7 +494,7 @@ dependencies = [
 [[package]]
 name = "esl-utils"
 version = "0.1.0"
-source = "git+https://github.com/hublot-io/esl-utils#15b6ff739f0a50e41e6861c8f32abeb4086cffe7"
+source = "git+https://github.com/hublot-io/esl-utils#2d2ba0c586227b233efea12e32811b4b9ac41d24"
 dependencies = [
  "custom_error",
  "env_logger",
