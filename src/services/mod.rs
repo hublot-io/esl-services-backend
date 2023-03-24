@@ -5,7 +5,7 @@ pub mod pricer;
 pub mod pricer_service;
 use custom_error::custom_error;
 use log::debug;
-use reqwest::{Client, ClientBuilder, Identity, Proxy, Certificate};
+use reqwest::{Certificate, Client, ClientBuilder, Identity, Proxy};
 use std::io::Read;
 use std::{fs::File, io};
 
@@ -33,7 +33,7 @@ fn read_certificate(certificate_path: &str) -> Result<Vec<u8>, ClientError> {
 pub fn build_client(
     proxy_cs: Option<String>,
     certificate_pem: Option<String>,
-    certificate_root: Option<String>
+    certificate_root: Option<String>,
 ) -> Result<Client, ClientError> {
     let mut client_builder = ClientBuilder::new().use_rustls_tls();
     if let Some(cs) = proxy_cs {

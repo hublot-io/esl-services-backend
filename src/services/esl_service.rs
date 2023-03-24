@@ -2,7 +2,7 @@ use std::{io, str::Utf8Error};
 
 use crate::utils::unicode_string;
 use esl_utils::generic_esl::GenericEsl;
-use log::{trace, debug};
+use log::{debug, trace};
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -86,8 +86,8 @@ pub async fn get_print_requests(
     let url = format!("{hublot_server_url}/esl-api/poll/{client_serial}");
     trace!("Fetching esls status: {}", url);
     let response = client.get(url).send().await?;
-    
-    match response.status(){ 
+
+    match response.status() {
         StatusCode::OK => {
             let as_json: Vec<GenericEsl> = response.json().await?;
             trace!("Got esl status: {:?}", as_json);
@@ -97,7 +97,10 @@ pub async fn get_print_requests(
             let content = response.bytes().await?;
             let as_str = std::str::from_utf8(&content)?;
             debug!("Esl service error: status={status}, payload={as_str}");
-            Err(EslServiceError::Custom { status: status, content: as_str.to_string() })
+            Err(EslServiceError::Custom {
+                status,
+                content: as_str.to_string(),
+            })
         }
     }
 }
