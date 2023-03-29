@@ -19,15 +19,14 @@ reqwest = { version = "0.11", features = ["json", "socks", "rustls-tls", "native
 custom_error = "1.9.2"
 unidecode = "0.3.0"
 esl-utils = {git="https://github.com/hublot-io/esl-utils"}
-
 image = "0.24.5"
-ansi-to-tui = "2.0.0"
-indicatif = {version="0.17.3", features=["improved_unicode"]}
-console = "0.15.5"
+ansi-to-tui = "3.0.0"
+indicatif = {version="0.17.3", features=["improved_unicode", "unicode-width"]}
+console = {version="0.15.5", features=["unicode-width"]}
 chrono = "0.4.23"
 
 [build-dependencies]
-embed-resource = "1.7.1"
+embed-resource = "2.1.1"
 
 
 [profile.release]

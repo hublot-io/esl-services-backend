@@ -34,7 +34,8 @@ pub async fn poll(
     polling_rate: Option<i32>,
 ) -> Result<(), PollingError> {
     let interval = polling_rate.unwrap_or(2000);
-    let spinner_style = ProgressStyle::with_template("{prefix:.bold.dim} {spinner} {wide_msg}")
+    let spinner_style = ProgressStyle
+        ::with_template("{prefix:.bold.dim} {spinner} {wide_msg}")
         .unwrap()
         .tick_chars("/|\\- ");
 

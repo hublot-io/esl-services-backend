@@ -11,6 +11,7 @@ use env_logger::Env;
 use esl_utils::parse::ParseClient;
 
 use log::{debug, error};
+use reqwest::StatusCode;
 use services::pricer_service::PricerError;
 use services::{build_client, esl_service::EslServiceError, poll::PollingError, ClientError};
 use settings::Settings;
@@ -114,6 +115,10 @@ async fn main() -> Result<(), MainError> {
             .expect("Missing parse configuration key: [parse_url]"),
     );
     let log_config = app_config.clone();
+
+
+
+
     env_logger::Builder::from_env(envconf)
         .format(move |buf, record| {
             writeln!(
@@ -153,17 +158,43 @@ async fn main() -> Result<(), MainError> {
 
     println!(
         "{} {}Loading app configuration...",
-        style("[1/3]").bold().dim(),
+        style("[1/4]").bold().dim(),
         CONFIG
     );
 
+
     debug!("Fetched config from file {:?}", app_config);
+
+    // test proxy and log 
+    {
+        let app_config = app_config.clone();
+        let client = build_client(
+            app_config.proxy_cs,
+            app_config.certificate_pem_path,
+            app_config.certificate_root_path,
+        )?;
+        let res = client.get(format!("{}/esl-api/status", app_config.hublot_server_url)).send().await.expect(
+            "Test connection has failed, please make sure that the proxy configuration is correct"
+        );
+        match res.status() {
+            StatusCode::OK => println!(
+                "{} {} Connection is OK, proxy and certificate are valids",
+                style("[2/4]").bold().dim(),
+                CONFIG
+            ),
+            _ => println!(
+                "{} {} Connection to our server failed, please make sure that the proxy configuration is correct",
+                style("[2/4]").bold().dim(),
+                CONFIG
+            )
+        }
+    }
 
     let spawn_poll = tokio::task::spawn(async move {
         {
             println!(
                 "{} {}Checking if the config is complete...",
-                style("[2/3]").bold().dim(),
+                style("[3/4]").bold().dim(),
                 LOOKING_GLASS
             );
             let app_config = app_config.clone();
@@ -171,7 +202,7 @@ async fn main() -> Result<(), MainError> {
             app_config.pricer_password.expect("Pricer password is empty in the config file, please add 'pricer_password=<password>' in hublot-config.toml");
             println!(
                 "{} {}Starting the application loop...",
-                style("[3/3]").bold().dim(),
+                style("[4/4]").bold().dim(),
                 ROCKET
             );
         }
