@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serializer};
 
-pub fn serialize<S>(str: &String, serializer: S) -> Result<S::Ok, S::Error>
+pub fn serialize<S>(str: &str, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
