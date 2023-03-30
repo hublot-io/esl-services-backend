@@ -10,6 +10,9 @@ use custom_error::{custom_error, Error};
 use env_logger::Env;
 use esl_utils::parse::ParseClient;
 
+use file_rotate::compression::Compression;
+use file_rotate::suffix::{AppendTimestamp, FileLimit};
+use file_rotate::{ContentLimit, FileRotate, TimeFrequency};
 use log::{debug, error};
 use reqwest::StatusCode;
 use services::pricer_service::PricerError;
@@ -18,7 +21,6 @@ use settings::Settings;
 
 use std::io::Write;
 use std::{
-    fs::File,
     io::{self},
     time::Duration,
 };
@@ -96,7 +98,17 @@ async fn polling_worker(config: Settings) -> Result<(), MainError> {
 async fn main() -> Result<(), MainError> {
     let t = Term::stdout();
     t.clear_screen()?;
-    let log_file = Box::new(File::create("hublot-logs.txt").expect("Can't create log file"));
+
+    let mut ts = AppendTimestamp::default(FileLimit::Age(chrono::Duration::days(7)));
+    ts.format = "%Y-%d-%m";
+    let log_file = Box::new(FileRotate::new(
+        "hublot-logs/pricer.log",
+        ts,
+        ContentLimit::Time(TimeFrequency::Daily),
+        Compression::None,
+        None,
+    ));
+    // let log_file = Box::new(File::create("hublot-logs.txt").expect("Can't create log file"));
 
     let app_config = Settings::new()
         .expect("Cannot parse the configuration file, make sure that it is complete");
@@ -116,15 +128,12 @@ async fn main() -> Result<(), MainError> {
     );
     let log_config = app_config.clone();
 
-
-
-
     env_logger::Builder::from_env(envconf)
         .format(move |buf, record| {
             writeln!(
                 buf,
                 LOG_PLACEHOLDER!(),
-                record.file_static().unwrap_or("unknown"),
+                record.module_path().unwrap_or("unknown"),
                 record.line().unwrap_or(0),
                 Local::now().format("%Y-%m-%dT%H:%M:%S%.3f"),
                 record.level(),
@@ -162,10 +171,8 @@ async fn main() -> Result<(), MainError> {
         CONFIG
     );
 
-
     debug!("Fetched config from file {:?}", app_config);
-
-    // test proxy and log 
+    // test proxy and log
     {
         let app_config = app_config.clone();
         let client = build_client(
