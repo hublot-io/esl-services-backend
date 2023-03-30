@@ -98,20 +98,25 @@ async fn polling_worker(config: Settings) -> Result<(), MainError> {
 async fn main() -> Result<(), MainError> {
     let t = Term::stdout();
     t.clear_screen()?;
+    let app_config = Settings::new()
+        .expect("Cannot parse the configuration file, make sure that it is complete");
 
     let mut ts = AppendTimestamp::default(FileLimit::Age(chrono::Duration::days(7)));
     ts.format = "%Y-%d-%m";
+
+    let log_path = app_config
+        .clone()
+        .log_file
+        .unwrap_or("hublot-pricer/pricer.log".to_string());
+
     let log_file = Box::new(FileRotate::new(
-        "hublot-logs/pricer.log",
+        log_path,
         ts,
         ContentLimit::Time(TimeFrequency::Daily),
         Compression::None,
         None,
     ));
     // let log_file = Box::new(File::create("hublot-logs.txt").expect("Can't create log file"));
-
-    let app_config = Settings::new()
-        .expect("Cannot parse the configuration file, make sure that it is complete");
 
     let log_level = app_config.clone().log_level.unwrap_or("warn".to_string());
     let envconf = Env::default().default_filter_or(&log_level);
@@ -171,7 +176,13 @@ async fn main() -> Result<(), MainError> {
         CONFIG
     );
 
-    debug!("Fetched config from file {:?}", app_config);
+    debug!(
+        "Fetched config from file client_serial={:?} certificate_pem_path={:?} hublot_server_url={:?} log_file={:?}",
+        app_config.client_serial,
+        app_config.certificate_pem_path,
+        app_config.hublot_server_url,
+        app_config.log_file
+    );
     // test proxy and log
     {
         let app_config = app_config.clone();

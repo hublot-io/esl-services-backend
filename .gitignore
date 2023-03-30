@@ -2,4 +2,4 @@
 hublot-config.toml
 hublot-logs.txt
 *.pem
-hublot-logs/
+hublot-pricer
