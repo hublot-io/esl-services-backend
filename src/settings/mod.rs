@@ -8,6 +8,8 @@ pub struct Settings {
     pub proxy_cs: Option<String>,
     pub certificate_pem_path: Option<String>,
     pub certificate_root_path: Option<String>,
+    // only when using native-tls
+    pub certificate_key_path: Option<String>,
     pub log_level: Option<String>,
     pub esl_server_url: String,
     pub hublot_server_url: String,
@@ -15,7 +17,7 @@ pub struct Settings {
     pub pricer_user: Option<String>,
     pub pricer_password: Option<String>,
     pub parse_id: Option<String>,
-    pub parse_url: Option<String>,
+    pub parse_url: Option<String>
 }
 
 impl Settings {

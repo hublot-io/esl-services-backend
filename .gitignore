@@ -3,3 +3,4 @@ hublot-config.toml
 hublot-logs.txt
 *.pem
 hublot-logs/
+*.pkcs8
