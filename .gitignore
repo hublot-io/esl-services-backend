@@ -2,5 +2,6 @@
 hublot-config.toml
 hublot-logs.txt
 *.pem
-hublot-pricer
+hublot-pricer/
+hublot-logs/
 *.pkcs8

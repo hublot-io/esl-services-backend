@@ -34,18 +34,21 @@ pub fn build_client(
     proxy_cs: Option<String>,
     certificate_pem: Option<String>,
     certificate_root: Option<String>,
+    certificate_key: Option<String>,
+
 ) -> Result<Client, ClientError> {
-    let mut client_builder = ClientBuilder::new().use_rustls_tls();
+    let mut client_builder = ClientBuilder::new().use_native_tls();
     if let Some(cs) = proxy_cs {
         debug!("Config contains a proxy connection string, adding it to the http client");
         let proxy_builder = Proxy::https(cs)?;
         client_builder = client_builder.proxy(proxy_builder)
     }
-    if let (Some(pem), Some(root)) = (certificate_pem, certificate_root) {
+    if let (Some(pem), Some(root), Some(key)) = (certificate_pem, certificate_root, certificate_key) {
         debug!("Config contains a certificate, adding it to the http client");
         let pem_content = read_certificate(&pem)?;
+        let pkcs8 = read_certificate(&key)?;
         let root_content = read_certificate(&root)?;
-        let identity_builder = Identity::from_pem(&pem_content)?;
+        let identity_builder = Identity::from_pkcs8_pem(&pem_content, &pkcs8)?;
         client_builder = client_builder.identity(identity_builder);
         let cert = Certificate::from_pem(&root_content)?;
         client_builder = client_builder.add_root_certificate(cert);

@@ -78,6 +78,7 @@ async fn polling_worker(config: Settings) -> Result<(), MainError> {
         config.proxy_cs,
         config.certificate_pem_path,
         config.certificate_root_path,
+        config.certificate_key_path
     )?;
 
     services::poll::poll(
@@ -190,6 +191,7 @@ async fn main() -> Result<(), MainError> {
             app_config.proxy_cs,
             app_config.certificate_pem_path,
             app_config.certificate_root_path,
+            app_config.certificate_key_path
         )?;
         let secure_api = format!("{}/esl-api/status", app_config.hublot_server_url);
         let insecure_api = secure_api.replace("secure.", "");
