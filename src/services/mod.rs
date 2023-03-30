@@ -18,7 +18,11 @@ custom_error! {
         Reqwest{source: reqwest::Error} = "Unable to build a reqwest client: {source}",
         Io{source: io::Error}= "unable to read from the file: {source}"
 }
-
+static APP_USER_AGENT: &str = concat!(
+    env!("CARGO_PKG_NAME"),
+    "/",
+    env!("CARGO_PKG_VERSION"),
+);
 /// Reads a certificate file into a Buffer
 fn read_certificate(certificate_path: &str) -> Result<Vec<u8>, ClientError> {
     let mut buf = Vec::new();
@@ -69,9 +73,9 @@ pub fn build_client(
         }
 
         let identity_builder = get_identity(pem_content, pkcs8)?;
-
-        client_builder = client_builder.identity(identity_builder);
+        client_builder = client_builder.identity(identity_builder).user_agent(APP_USER_AGENT);
         let cert = Certificate::from_pem(&root_content)?;
+
         client_builder = client_builder.add_root_certificate(cert);
     }
     let client = client_builder.build()?;
