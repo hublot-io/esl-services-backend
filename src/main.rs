@@ -191,20 +191,28 @@ async fn main() -> Result<(), MainError> {
             app_config.certificate_pem_path,
             app_config.certificate_root_path,
         )?;
-        let res = client.get(format!("{}/esl-api/status", app_config.hublot_server_url)).send().await.expect(
-            "Test connection has failed, please make sure that the proxy configuration is correct"
-        );
-        match res.status() {
-            StatusCode::OK => println!(
-                "{} {} Connection is OK, proxy and certificate are valids",
-                style("[2/4]").bold().dim(),
-                CONFIG
-            ),
-            _ => println!(
-                "{} {} Connection to our server failed, please make sure that the proxy configuration is correct",
-                style("[2/4]").bold().dim(),
-                CONFIG
-            )
+        let secure_api = format!("{}/esl-api/status", app_config.hublot_server_url);
+        let insecure_api = secure_api.replace("secure.", "");
+        let apis = vec![insecure_api, secure_api];
+
+        for api in apis {
+            let res = client.get(api.clone()).send().await.expect(
+                "Test connection has failed, please make sure that the proxy configuration is correct"
+            );
+            match res.status() {
+                StatusCode::OK => println!(
+                    "{} {} Connection to {:?}, proxy and certificate are valids",
+                    style("[2/4]").bold().dim(),
+                    CONFIG,
+                    api
+                ),
+                _ => println!(
+                    "{} {} Connection to  {:?} failed, please make sure that the proxy configuration is correct",
+                    style("[2/4]").bold().dim(),
+                    CONFIG,
+                    api
+                )
+            }
         }
     }
 
