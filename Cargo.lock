@@ -478,6 +478,7 @@ dependencies = [
  "embed-resource",
  "env_logger",
  "esl-utils",
+ "file-rotate",
  "image",
  "indicatif",
  "lazy_static",
@@ -528,6 +529,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51093e27b0797c359783294ca4f0a911c270184cb10f85783b118614a1501be"
 dependencies = [
  "instant",
+]
+
+[[package]]
+name = "file-rotate"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fb134f7c34f0dea36008672668bcb8c9ec57c2bf249836036e912307096834f"
+dependencies = [
+ "chrono",
+ "flate2",
 ]
 
 [[package]]

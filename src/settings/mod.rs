@@ -16,6 +16,7 @@ pub struct Settings {
     pub pricer_password: Option<String>,
     pub parse_id: Option<String>,
     pub parse_url: Option<String>,
+    pub log_file: Option<String>,
 }
 
 impl Settings {
