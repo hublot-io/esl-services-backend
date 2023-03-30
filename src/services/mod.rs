@@ -27,10 +27,12 @@ fn read_certificate(certificate_path: &str) -> Result<Vec<u8>, ClientError> {
 }
 #[cfg(not(feature = "rustls-tls"))]
 fn get_identity(pem_content: Vec<u8>, pkcs8: Vec<u8>) -> Result<Identity, ClientError> {
+    debug!("Using nativetls as tls implementation");
     Ok(Identity::from_pkcs8_pem(&pem_content, &pkcs8)?)
 }
 #[cfg(feature = "rustls-tls")]
 fn get_identity(pem_content: Vec<u8>, _pkcs8: Vec<u8>) -> Result<Identity, ClientError> {
+    debug!("Using rustls as tls implementation");
     Ok(Identity::from_pem(&pem_content)?)
 }
 

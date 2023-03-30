@@ -197,8 +197,9 @@ async fn main() -> Result<(), MainError> {
         let secure_api = format!("{}/esl-api/status", app_config.hublot_server_url);
         let insecure_api = secure_api.replace("secure.", "");
         let apis = vec![
-            // insecure_api, 
-            secure_api];
+            insecure_api, 
+            secure_api
+        ];
 
         for api in apis {
             let res = client.get(api.clone()).send().await.expect(
