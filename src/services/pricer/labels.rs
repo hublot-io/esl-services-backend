@@ -47,7 +47,7 @@ pub async fn map_esl_to_id(
                 Some(link) => {
                     let id = &link.item_id;
                     let mut updated = esl.clone();
-                    updated.item_id = id.clone();
+                    updated.item_id = Some(id.clone());
                     Ok(updated)
                 }
                 None => Err(PricerError::MissingItem),
