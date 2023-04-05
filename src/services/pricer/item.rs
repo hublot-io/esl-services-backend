@@ -34,7 +34,9 @@ pub async fn update_item(
         }
         _reqwest_error => {
             debug!("Esl server denied the update: {}", response.status());
-            Err(PricerError::UpdateFailed { id: esl.item_id.unwrap() })
+            Err(PricerError::UpdateFailed {
+                id: esl.item_id.unwrap(),
+            })
         }
     }
 }

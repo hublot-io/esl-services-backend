@@ -74,7 +74,7 @@ pub struct PricerEsl {
     pub barcode: String,
     #[serde(rename = "objectId")]
     pub id: String,
-    #[serde( rename = "itemId")]
+    #[serde(rename = "itemId")]
     pub item_id: Option<String>,
     #[serde(rename = "itemName")]
     pub item_name: String,
@@ -140,7 +140,7 @@ pub async fn on_poll(
     //first: We need to map the esl barcode to a pricer item_id
     pb.inc(1);
     pb.set_message(format!("[1/3] Getting items for esl id {}", esl.barcode));
-    let mapped_esl = if esl.item_id.is_none()  {
+    let mapped_esl = if esl.item_id.is_none() {
         map_esl_to_id(
             esl,
             esl_server_url,
@@ -149,12 +149,18 @@ pub async fn on_poll(
         )
         .await?
     } else {
-        debug!("item_id is force barcode={:?} item_id={:?}", esl.barcode ,esl.item_id);
+        debug!(
+            "item_id is force barcode={:?} item_id={:?}",
+            esl.barcode, esl.item_id
+        );
         esl
     };
     debug!("Got mapped ESL: {:?}", mapped_esl);
     pb.inc(1);
-    pb.set_message(format!("[2/3] Updating item id {}", mapped_esl.clone().item_id.unwrap()));
+    pb.set_message(format!(
+        "[2/3] Updating item id {}",
+        mapped_esl.clone().item_id.unwrap()
+    ));
     // then we can request pricer to update the item with the matching id
     let update_request = update_item(
         mapped_esl.clone(),
