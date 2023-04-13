@@ -15,6 +15,7 @@ use file_rotate::suffix::{AppendTimestamp, FileLimit};
 use file_rotate::{ContentLimit, FileRotate, TimeFrequency};
 use log::{debug, error};
 use reqwest::StatusCode;
+use services::ProxyConfig;
 use services::pricer_service::PricerError;
 use services::{build_client, esl_service::EslServiceError, poll::PollingError, ClientError};
 use settings::Settings;
@@ -74,18 +75,22 @@ custom_error! {
 
 /// the background_task that starts the polling worker and updates the display of the ESLs
 async fn polling_worker(config: Settings) -> Result<(), MainError> {
+    let proxy_config =  if let Some(cs) = config.proxy_cs {
+        ProxyConfig::ConnectionString(cs)
+    } else {
+        ProxyConfig::System
+    };
     let polling_client = build_client(
-        config.proxy_cs,
+        proxy_config,
         config.certificate_pem_path,
         config.certificate_root_path,
         config.certificate_key_path,
     )?;
-
     services::poll::poll(
         &config.client_serial,
         &config.hublot_server_url,
         &config.esl_server_url,
-        // we already made sure that both useer&password exists
+        // we already made sure that both user&password exists
         config.pricer_user.unwrap(),
         config.pricer_password.unwrap(),
         polling_client,
@@ -118,25 +123,24 @@ async fn main() -> Result<(), MainError> {
         #[cfg(unix)]
         None,
     ));
-    // let log_file = Box::new(File::create("hublot-logs.txt").expect("Can't create log file"));
-
     let log_level = app_config.clone().log_level.unwrap_or("warn".to_string());
     let envconf = Env::default().default_filter_or(&log_level);
-    let parse_client = ParseClient::new(
-        app_config
-            .clone()
-            .parse_id
-            .expect("Missing parse configuration key: [parse_id]"),
-        None,
-        app_config
-            .clone()
-            .parse_url
-            .expect("Missing parse configuration key: [parse_url]"),
-    );
     let log_config = app_config.clone();
-
+    let app_log_config = app_config.clone();
     env_logger::Builder::from_env(envconf)
         .format(move |buf, record| {
+            let app_config = app_log_config.clone();
+            let parse_client = ParseClient::new(
+                app_config
+                    .clone()
+                    .parse_id
+                    .expect("Missing parse configuration key: [parse_id]"),
+                None,
+                app_config
+                    .clone()
+                    .parse_url
+                    .expect("Missing parse configuration key: [parse_url]"),
+            );
             writeln!(
                 buf,
                 LOG_PLACEHOLDER!(),
@@ -188,8 +192,13 @@ async fn main() -> Result<(), MainError> {
     // test proxy and log
     {
         let app_config = app_config.clone();
+        let proxy_config =  if let Some(cs) = app_config.proxy_cs {
+            ProxyConfig::ConnectionString(cs)
+        } else {
+            ProxyConfig::System
+        };
         let client = build_client(
-            app_config.proxy_cs,
+            proxy_config,
             app_config.certificate_pem_path,
             app_config.certificate_root_path,
             app_config.certificate_key_path,
@@ -245,6 +254,7 @@ async fn main() -> Result<(), MainError> {
                 }
                 Ok(_output) => {
                     error!("The poller have stopped with a successfull response. It is not an intended behavior please check the logs above.");
+                     sleep(Duration::from_millis(2000)).await;
                     break;
                 }
                 Err(err) if err.is_panic() => {
@@ -252,6 +262,7 @@ async fn main() -> Result<(), MainError> {
                 }
                 Err(_err) => {
                     error!("Runtime shutdown requested, gracefully shutting down the app");
+                     sleep(Duration::from_millis(2000)).await;
                     // return Err(MainError::JoinError { source: err });
                     break;
                 }

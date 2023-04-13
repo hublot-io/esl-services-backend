@@ -1,5 +1,5 @@
 use log::debug;
-use reqwest::StatusCode;
+use reqwest::{StatusCode, Client};
 use serde::{Deserialize, Serialize};
 
 use crate::services::pricer_service::{PricerError, PricerEsl};
@@ -27,8 +27,8 @@ pub async fn map_esl_to_id(
     esl_server_url: &str,
     pricer_user: String,
     pricer_password: String,
+    client: Client,
 ) -> Result<PricerEsl, PricerError> {
-    let client = reqwest::Client::new();
     let url = format!(
         "{}/api/public/core/v1/labels/{}",
         esl_server_url, esl.barcode

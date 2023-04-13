@@ -1,8 +1,9 @@
 use super::{esl_service::EslServiceError, pricer_service::PricerError};
-use crate::services::{
+use crate::{services::{
     esl_service::get_print_requests,
     pricer_service::{self, PricerEsl},
-};
+}, settings::Settings};
+use config::Config;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use log::info;
 use reqwest::Client;
@@ -42,7 +43,6 @@ pub async fn poll(
     let pb = m.add(ProgressBar::new(5));
     pb.set_style(spinner_style.clone());
     pb.set_prefix(format!("[{}/∞]", 0));
-
     loop {
         pb.set_message("polling_broker: Getting print requests".to_string());
         let print_requests = get_print_requests(hublot_server_url, &client, client_serial).await?;
@@ -76,6 +76,7 @@ pub async fn poll(
                 esl_server_url,
                 pricer_user.clone(),
                 pricer_password.clone(),
+                client.clone(),
                 &pb,
             )
             .await?;

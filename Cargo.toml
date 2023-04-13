@@ -26,6 +26,7 @@ indicatif = {version="0.17.3", features=["improved_unicode", "unicode-width"]}
 console = {version="0.15.5", features=["unicode-width"]}
 chrono = "0.4.23"
 file-rotate = "0.7.3"
+url = "2.3.1"
 
 [features]
 rustls-tls=["reqwest/rustls-tls"]

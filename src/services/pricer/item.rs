@@ -1,5 +1,5 @@
 use log::debug;
-use reqwest::StatusCode;
+use reqwest::{StatusCode, Client};
 use serde::{Deserialize, Serialize};
 
 use crate::services::pricer_service::{PricerError, PricerEsl};
@@ -16,8 +16,8 @@ pub async fn update_item(
     esl_server_url: &str,
     pricer_user: String,
     pricer_password: String,
+    client: Client
 ) -> Result<PricerAccepted, PricerError> {
-    let client = reqwest::Client::new();
     let url = format!("{esl_server_url}/api/public/core/v1/items");
     let payload = vec![&esl];
     let response = client

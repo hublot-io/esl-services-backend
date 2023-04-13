@@ -1,9 +1,17 @@
 use std::io;
 
-use super::pricer::{item::update_item, labels::map_esl_to_id, status::items_result};
+use super::{
+    pricer::{item::update_item, labels::map_esl_to_id, status::items_result},
+    ClientError,
+};
+use crate::{
+    services::{build_client, is_local, ProxyConfig},
+    settings::Settings,
+};
 use esl_utils::generic_esl::GenericEsl;
 use indicatif::ProgressBar;
 use log::debug;
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, NoneAsEmptyString};
 
@@ -16,7 +24,8 @@ custom_error! {
         Reqwest{source: reqwest::Error} = "An issue occured within this request: {source}",
         Io{source: io::Error}= "An I/O error occured: {source}",
         MissingItem = "Cannot find an item linked to this barcode",
-        UpdateFailed{id: String} = "PricerError, cannot update this item: {id}"
+        UpdateFailed{id: String} = "PricerError, cannot update this item: {id}",
+        ClientError{source: ClientError} = "An issue occured when creating the new http client. {source} "
 }
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -83,7 +92,6 @@ pub struct PricerEsl {
     pub price: Option<String>,
     pub properties: PricerFishProperties,
 }
-
 impl From<GenericEsl> for PricerEsl {
     fn from(value: GenericEsl) -> Self {
         let properties = PricerFishProperties {
@@ -97,6 +105,7 @@ impl From<GenericEsl> for PricerEsl {
             },
             fish_engin_2: None,
             fish_engin_3: None,
+
             // guessing this is congel infos
             fish_info: value.congel_infos,
             fish_name_2: None,
@@ -107,7 +116,7 @@ impl From<GenericEsl> for PricerEsl {
             fish_origin_2: Some(value.sous_zone.unwrap_or_default()),
             fish_production: value.production,
             // Pricer: Size and price are set by an internal software, we should no override these fields
-            fish_size: None,
+            fish_size: Some(value.infos_prix),
             plu: Some(value.plu),
             allergenes: value.allergenes,
             promo: None,
@@ -135,17 +144,28 @@ pub async fn on_poll(
     esl_server_url: &str,
     pricer_user: String,
     pricer_password: String,
+    client: Client,
     pb: &ProgressBar,
 ) -> Result<PricerEsl, PricerError> {
     //first: We need to map the esl barcode to a pricer item_id
+    let used_client = if is_local(&esl_server_url) {
+        debug!("[on_poll] server is local, and no proxy_cs is set, bypass system proxy to call local server");
+        build_client(ProxyConfig::BypassProxy, None, None, None)?
+    } else {
+        debug!("[on_poll] No proxy cs, and server is not local, using prebuilt client");
+        client
+    };
+
     pb.inc(1);
     pb.set_message(format!("[1/3] Getting items for esl id {}", esl.barcode));
+
     let mapped_esl = if esl.item_id.is_none() {
         map_esl_to_id(
             esl,
             esl_server_url,
             pricer_user.clone(),
             pricer_password.clone(),
+            used_client.clone(),
         )
         .await?
     } else {
@@ -167,6 +187,7 @@ pub async fn on_poll(
         esl_server_url,
         pricer_user.clone(),
         pricer_password.clone(),
+        used_client.clone(),
     )
     .await?;
     debug!("Got request status: {:?}", update_request);
@@ -181,6 +202,7 @@ pub async fn on_poll(
         esl_server_url,
         pricer_user.clone(),
         pricer_password.clone(),
+        used_client.clone(),
     )
     .await?;
     debug!("Got update_status {:?}", update_status);

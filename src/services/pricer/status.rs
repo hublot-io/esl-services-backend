@@ -1,5 +1,5 @@
 use log::debug;
-use reqwest::StatusCode;
+use reqwest::{StatusCode, Client};
 use serde::{Deserialize, Serialize};
 
 use crate::services::pricer_service::PricerError;
@@ -41,8 +41,8 @@ pub async fn items_result(
     esl_server_url: &str,
     pricer_user: String,
     pricer_password: String,
+    client: Client
 ) -> Result<PricerItemsResult, PricerError> {
-    let client = reqwest::Client::new();
     let url = format!(
         "{}/api/public/core/v1/items-result/{}",
         esl_server_url, request_status.request_id
