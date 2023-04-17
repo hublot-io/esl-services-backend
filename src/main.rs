@@ -182,6 +182,8 @@ async fn main() -> Result<(), MainError> {
         CONFIG
     );
 
+    debug!("Hublot Version: {:?}:{:?} ",env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"));
+
     debug!(
         "Fetched config from file client_serial={:?} certificate_pem_path={:?} hublot_server_url={:?} log_file={:?}",
         app_config.client_serial,
